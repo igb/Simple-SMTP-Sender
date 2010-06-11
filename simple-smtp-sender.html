@@ -1,0 +1,133 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+	<style type="text/css">
+	body {
+
+	font-family: arial;
+	font-size: 10pt;
+
+	}
+	td {
+
+	font-family: arial;
+	font-size: 10pt;
+	background: ffffff;
+	}
+
+
+	.footnote {
+
+	font-family: arial;
+	font-size: 7pt;
+
+	}
+
+	table {
+	background: black;
+
+	}
+
+	th {
+
+	background: ffffff;
+	font-family: arial;
+	font-size: 10pt;
+	font-weight: bold;
+
+	}
+	tt {
+
+	font-family: arial;
+	font-size: 8pt;
+
+	}
+	.footer {
+	    font-size: 10;
+	    font-weight: bold;
+
+	}
+	.feed {background: #eeeeff;}
+
+	.doc {
+	    border: 1px black dashed;
+	    padding: 3px;
+	    background: dddddd;
+	}
+	.command {
+	    font-style: italic;
+	}
+	pre {
+	    font-family: courier;
+	    font-size: 8pt;
+	    border-style: dashed;
+	    border-color: gray;
+	    border-width: 1px;
+	}
+
+	sup {
+	    font-size: 6pt;
+	}
+	</style>
+	<title>Simple SMTP Sender for Erlang</title>
+</head>
+<body>
+	<h2>Simple SMTP Sender for Erlang</h2>&nbsp;
+<p>I've never been able to fathom why SMTP isn't part of the OTP, nor why I can't find a <i>simple</i> third-party SMTP client written in Erlang for sending emails. Anyway, <a href="simple_smtp_sender.erl">here</a> is a trivial SMTP client for sending emails, hacked together in a few minutes...YMMV.
+<pre>
+	
+	-module(simple_smtp_sender).
+
+	-export([send/4, send/5, send/6, send/7]).
+
+	send(To, From, Subject, Message)->
+		Server="localhost",
+		send(To, From, Subject, Message, Server).
+
+	send(To, From, Subject, Message, Server)->
+		PortNo=25,	
+		send(To, From, Subject, Message, Server, PortNo).
+
+	send(To, From, Subject, Message, Server, PortNo)->
+		{ok, Hostname}=inet:gethostname(),
+		send(To, From, Subject, Message, Server, PortNo, Hostname).
+
+	send(To, From, Subject, Message, Server, PortNo, LocalDomain)->
+		{ok,Sock}=gen_tcp:connect(Server,PortNo,[{active, false}]),
+		{ok, "220"++_}=gen_tcp:recv(Sock, 0),
+		gen_tcp:send(Sock, lists:append(["HELO ", LocalDomain, [13, 10]])),
+		{ok, "250"++_}=gen_tcp:recv(Sock, 0),
+		gen_tcp:send(Sock, lists:append(["MAIL FROM: ", From, [13, 10]])),
+		{ok, "250"++_}=gen_tcp:recv(Sock, 0),
+		gen_tcp:send(Sock, lists:append(["RCPT TO: ", To, [13, 10]])),
+		{ok, "250"++_}=gen_tcp:recv(Sock, 0),
+		gen_tcp:send(Sock, lists:append(["DATA", [13, 10]])),
+		{ok, "354"++_}=gen_tcp:recv(Sock, 0),
+		gen_tcp:send(Sock, lists:append(["Subject: ", Subject, [13, 10],[13, 10]])),
+		gen_tcp:send(Sock, lists:append([Message])),
+		gen_tcp:send(Sock, lists:append([[13, 10],".",[13, 10],[13, 10]])),
+		{ok, "250"++_}=gen_tcp:recv(Sock, 0),
+		gen_tcp:send(Sock,lists:append("QUIT", [13, 10])),
+		{ok, "221"++_}=gen_tcp:recv(Sock, 0),
+		gen_tcp:close(Sock),
+		ok.	
+	
+	
+</pre>
+</p>
+<h3>Usage</h3>
+<p>
+<pre>
+	
+	Erlang R13B02 (erts-5.7.3) [source] [smp:2:2] [rq:2] [async-threads:0] [kernel-poll:false]
+
+	Eshell V5.7.3  (abort with ^G)
+	1> simple_smtp_sender:send("spam@hccp.org", "spam@hccp.org", "this is a subject", "and this is a message",  "smtp.hccp.org", 25).
+	ok	
+
+</pre>	
+</p>
+<p class="footer">
+6/11/2010</p>
+</body>
+</html> 

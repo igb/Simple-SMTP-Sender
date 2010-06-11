@@ -1,6 +1,6 @@
--module(smtp).
+-module(simple_smtp_sender).
 
--export([send/4, send/5, send/6, send/7, test/0 ]).
+-export([send/4, send/5, send/6, send/7]).
 
 send(To, From, Subject, Message)->
 	Server="localhost",
@@ -31,4 +31,5 @@ send(To, From, Subject, Message, Server, PortNo, LocalDomain)->
 	{ok, "250"++_}=gen_tcp:recv(Sock, 0),
 	gen_tcp:send(Sock,lists:append("QUIT", [13, 10])),
 	{ok, "221"++_}=gen_tcp:recv(Sock, 0),
-	gen_tcp:close(Sock).	
+	gen_tcp:close(Sock),
+	ok.
